@@ -96,6 +96,19 @@
       "testClasses": ["StaleOpportunitySweepServiceTest"],
       "permissionSet": "Stale_Deal_Sweeper_Admin",
       "schedule": "scripts/apex/schedule_stale_deal_sweeper.apex"
+    },
+    {
+      "id": "account-360-copilot",
+      "label": "Account 360 Copilot",
+      "kind": "copilot",
+      "bundle": "Account_360_Copilot",
+      "summary": "Internal copilot: read-only Account 360 brief — open cases, open pipeline, recent orders, contacts.",
+      "requiredObjects": ["Account", "Case", "Opportunity"],
+      "requiredFeatureLicenses": ["Sales User"],
+      "classes": ["AccountInsightsService", "SummarizeAccountAction"],
+      "testClasses": ["AccountInsightsServiceTest"],
+      "permissionSet": "Account_360_Copilot_Admin",
+      "seed": "scripts/apex/seed_account.apex"
     }
   ]
 }
