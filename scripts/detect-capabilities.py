@@ -23,20 +23,24 @@ with open(os.path.join(HERE, "agents.json")) as f:
     catalog = json.load(f)
 agents = catalog["agents"]
 
-def query(soql):
-    cmd = ["sf", "data", "query", "--use-tooling-api", "--json", "-q", soql]
+def query(soql, tooling=True):
+    cmd = ["sf", "data", "query", "--json", "-q", soql]
+    if tooling:
+        cmd.append("--use-tooling-api")
     if ORG:
         cmd += ["-o", ORG]
     out = subprocess.run(cmd, capture_output=True, text=True, cwd=HERE)
     return json.loads(out.stdout).get("result", {}).get("records", [])
 
-# every object any agent cares about (required + optional), plus any LIKE patterns
+# every object any agent cares about (required + optional), plus any LIKE patterns + licenses
 wanted = set()
 like_patterns = set()
+need_licenses = set()
 for a in agents:
     wanted.update(a.get("requiredObjects", []))
     wanted.update(a.get("optionalObjects", []))
     like_patterns.update(a.get("requiredObjectsLike", []))
+    need_licenses.update(a.get("requiredLicenses", []))
 
 err("==> Detecting org capabilities%s ..." % (" for %s" % ORG if ORG else ""))
 try:
@@ -51,6 +55,12 @@ try:
         rows = query("SELECT QualifiedApiName FROM EntityDefinition WHERE QualifiedApiName LIKE '%s' LIMIT 1" % pat)
         if rows:
             like_satisfied.add(pat)
+    # active feature licenses (the reliable signal for clouds whose objects aren't in EntityDefinition, e.g. Data Cloud)
+    active_licenses = set()
+    if need_licenses:
+        lin = ",".join("'%s'" % l for l in sorted(need_licenses))
+        for r in query("SELECT MasterLabel FROM PermissionSetLicense WHERE Status = 'Active' AND MasterLabel IN (%s)" % lin, tooling=False):
+            active_licenses.add(r["MasterLabel"])
 except Exception as e:
     err("ERROR: could not query the org. Is it authenticated? (%s)" % e)
     sys.exit(2)
@@ -63,6 +73,7 @@ for a in agents:
     req = a.get("requiredObjects", [])
     missing = [o for o in req if o not in present]
     missing += ["matching:%s" % p for p in a.get("requiredObjectsLike", []) if p not in like_satisfied]
+    missing += ["license:%s" % l for l in a.get("requiredLicenses", []) if l not in active_licenses]
     opt_present = [o for o in a.get("optionalObjects", []) if o in present]
     if not missing:
         eligible.append(a["id"])

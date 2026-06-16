@@ -134,6 +134,19 @@
       "classes": ["CampaignBuilderService", "CreateCampaignAction", "AddCampaignMembersAction"],
       "testClasses": ["CampaignBuilderServiceTest"],
       "permissionSet": "Campaign_Builder_Admin"
+    },
+    {
+      "id": "data-cloud-insights",
+      "label": "Data Cloud Insights",
+      "kind": "copilot",
+      "bundle": "Data_Cloud_Insights",
+      "summary": "Internal copilot: grounds the rep in a customer's unified Data Cloud profile (Unified Individual / Calculated Insights) by email, via ConnectApi.CdpQuery. Degrades gracefully until the DMO is configured.",
+      "requiredObjects": [],
+      "requiredLicenses": ["Data Cloud"],
+      "note": "Gated on the Data Cloud license (DMOs aren't in EntityDefinition, and ConnectApi.CdpQuery only compiles where Data Cloud is enabled). Edit the DMO/field constants atop DataCloudInsightsService to match your Unified Individual model; the same Apex bridge serves Calculated Insights/predictions.",
+      "classes": ["DataCloudInsightsService", "GetCustomerInsightsAction"],
+      "testClasses": ["DataCloudInsightsServiceTest"],
+      "permissionSet": "Data_Cloud_Insights_Admin"
     }
   ]
 }

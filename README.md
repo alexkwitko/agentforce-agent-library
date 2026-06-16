@@ -24,6 +24,10 @@ Three **kinds**: 🟢 customer-facing · 🔵 internal copilot · 🟣 headless/
 | **Case Service Agent** | 🔵 copilot | Opens support cases and resolves/closes them with a recorded resolution. | Service Cloud (`Case`) |
 | **Sales Opportunity Coach** | 🔵 copilot | Summarizes an opportunity's health, recommends the next-best step, and records it (with a follow-up task) on request. | Sales (`Opportunity`, `Task`) |
 | **Stale-Deal Sweeper** | 🟣 headless | Runs daily with no chat UI — finds open opportunities idle past a threshold, logs follow-up tasks, and sets a next step where blank. | Sales (`Opportunity`, `Task`) |
+| **Account 360 Copilot** | 🔵 copilot | Read-only rep brief: open cases, open pipeline, recent orders, contacts. | Sales (`Account`, `Case`, `Opportunity`) |
+| **Lead Qualifier** | 🟣 headless | Runs daily — scores open leads on completeness, stamps Rating (Hot/Warm/Cold), logs follow-ups for hot leads. | Sales (`Lead`, `Task`) |
+| **Campaign Builder** | 🔵 copilot | Creates a campaign and adds recent leads/contacts as members (license-free stand-in for Data Cloud segmentation). | Marketing (`Campaign`, `CampaignMember`) |
+| **Data Cloud Insights** | 🔵 copilot | Grounds the rep in a customer's unified Data Cloud profile by email (`ConnectApi.CdpQuery`); degrades gracefully until the DMO is configured. | Data Cloud license |
 
 See [`docs/02-agent-roadmap.md`](docs/02-agent-roadmap.md) for the full ~25-agent roadmap (Sales, Service, Field Service, Commerce, Marketing, Ops) and [`docs/01-capability-inventory.md`](docs/01-capability-inventory.md) for how agents map to org licenses.
 
