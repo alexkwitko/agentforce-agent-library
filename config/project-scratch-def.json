@@ -1,0 +1,18 @@
+{
+  "orgName": "Agentforce Agent Library",
+  "edition": "Developer",
+  "language": "en_US",
+  "features": [
+    "FieldServiceAccess",
+    "ServiceCloud",
+    "Knowledge",
+    "LightningServiceConsole"
+  ],
+  "settings": {
+    "knowledgeSettings": { "enableKnowledge": true, "enableLightningKnowledge": true },
+    "fieldServiceSettings": { "enableFieldService": true },
+    "orderSettings": { "enableOrders": true },
+    "caseSettings": { "systemUserEmail": "noreply@example.com" }
+  },
+  "_comment": "NOTE: Agentforce/Einstein availability in SCRATCH orgs depends on your Dev Hub entitlements and is not guaranteed. If `sf agent publish` fails in a scratch org, use a Developer/Trailhead org that has Agentforce enabled and run scripts/install.sh instead — that is the validated path. Feature names may need tweaking for your Dev Hub edition."
+}

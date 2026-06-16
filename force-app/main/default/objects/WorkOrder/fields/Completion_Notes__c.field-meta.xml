@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Completion_Notes__c</fullName>
+    <label>Completion Notes</label>
+    <type>LongTextArea</type>
+    <length>4000</length>
+    <visibleLines>4</visibleLines>
+    <description>Free-text summary recorded by the Service Appointment Closer when a visit is completed.</description>
+    <inlineHelpText>What was done on this visit; recorded when the appointment is closed.</inlineHelpText>
+    <required>false</required>
+</CustomField>

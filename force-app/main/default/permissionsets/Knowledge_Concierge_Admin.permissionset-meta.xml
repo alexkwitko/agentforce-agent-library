@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Knowledge Concierge Admin</label>
+    <description>Access to the Knowledge Concierge agent's Apex actions. Note: the running/agent user also needs the "Knowledge User" checkbox enabled on their User record to read articles.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <classAccesses>
+        <apexClass>KnowledgeSearchService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>SearchKnowledgeAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+</PermissionSet>

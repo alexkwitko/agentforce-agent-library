@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Requires_Field_Service__c</fullName>
+    <label>Requires Field Service</label>
+    <type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <description>When checked, buying this product spins up a Field Service WorkOrder + ServiceAppointment for installation/service.</description>
+</CustomField>

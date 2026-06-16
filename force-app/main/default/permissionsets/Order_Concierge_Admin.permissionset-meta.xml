@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Order Concierge Admin</label>
+    <description>Access to the Order / Commerce Concierge agent's Apex actions (order lookup + reorder).</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <classAccesses>
+        <apexClass>OrderConciergeService</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>LookupOrderAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>ReorderAction</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+</PermissionSet>

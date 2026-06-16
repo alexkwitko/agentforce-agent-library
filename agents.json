@@ -1,0 +1,75 @@
+{
+  "library": "Agentforce Agent Library",
+  "description": "Free, open, installable Agentforce agents. Each agent is gated by the OBJECTS that must exist in the target org (the real capability test) — not just by license name, because licenses can be present while the backing objects/managed packages are not.",
+  "apiVersion": "64.0",
+  "agents": [
+    {
+      "id": "field-service-scheduler",
+      "label": "Field Service Scheduler",
+      "bundle": "Field_Service_Scheduler",
+      "summary": "Turns an Order for a serviceable product into a Work Order + appointment, offers real available time slots, and books the customer's choice.",
+      "requiredObjects": ["WorkOrder", "WorkOrderLineItem", "ServiceAppointment", "ServiceTerritory", "Order", "OrderItem"],
+      "requiredFeatureLicenses": ["Field Service Standard"],
+      "classes": ["OrderToFieldService", "FieldServiceSchedulingService", "GetAppointmentSlotsAction", "BookAppointmentAction"],
+      "testClasses": ["OrderToFieldServiceTest", "FieldServiceSchedulingServiceTest"],
+      "fields": ["Product2.Requires_Field_Service__c", "WorkOrder.Source_Order_Id__c"],
+      "permissionSet": "Field_Service_Scheduler_Admin",
+      "config": "config/field-service",
+      "seed": "scripts/apex/seed_field_service.apex"
+    },
+    {
+      "id": "service-appointment-closer",
+      "label": "Service Appointment Closer",
+      "bundle": "Service_Appointment_Closer",
+      "summary": "Helps a technician/dispatcher close out a visit: marks the appointment Completed, rolls the Work Order to Completed, and records a completion summary (creates a Service Report when that object is available).",
+      "requiredObjects": ["ServiceAppointment", "WorkOrder"],
+      "requiredFeatureLicenses": ["Field Service Standard"],
+      "optionalObjects": ["ServiceReport"],
+      "classes": ["ServiceAppointmentCloseService", "CloseServiceAppointmentAction"],
+      "testClasses": ["ServiceAppointmentCloseServiceTest"],
+      "fields": ["WorkOrder.Completion_Notes__c"],
+      "permissionSet": "Service_Appointment_Closer_Admin",
+      "seed": "scripts/apex/seed_service_close.apex"
+    },
+    {
+      "id": "knowledge-concierge",
+      "label": "Knowledge Concierge",
+      "bundle": "Knowledge_Concierge",
+      "summary": "Answers customer/agent questions only from your published Knowledge articles, returning titles, summaries, and links — deflecting safely when nothing matches.",
+      "requiredObjects": [],
+      "requiredObjectsLike": ["%__kav"],
+      "requiredFeatureLicenses": ["Knowledge User (Lightning Knowledge)"],
+      "note": "Needs Lightning Knowledge enabled with at least one published article type (a *__kav object). The agent compiles everywhere (dynamic SOSL) but only returns answers where Knowledge is set up.",
+      "classes": ["KnowledgeSearchService", "SearchKnowledgeAction"],
+      "testClasses": ["KnowledgeSearchServiceTest"],
+      "permissionSet": "Knowledge_Concierge_Admin",
+      "seed": "scripts/apex/seed_knowledge.apex"
+    },
+    {
+      "id": "order-concierge",
+      "label": "Order / Commerce Concierge",
+      "bundle": "Order_Concierge",
+      "summary": "Looks up an order by number, summarizes its status and line items, and reorders (clones) it on request — PII-gated to only the order asked about.",
+      "requiredObjects": ["Order", "OrderItem"],
+      "requiredFeatureLicenses": ["Lightning Order Management User"],
+      "optionalObjects": ["FulfillmentOrder"],
+      "classes": ["OrderConciergeService", "LookupOrderAction", "ReorderAction"],
+      "testClasses": ["OrderConciergeServiceTest"],
+      "permissionSet": "Order_Concierge_Admin",
+      "seed": "scripts/apex/seed_order.apex"
+    },
+    {
+      "id": "case-service-agent",
+      "label": "Case Service Agent",
+      "bundle": "Case_Service_Agent",
+      "summary": "Creates, triages, comments on, and resolves Cases with a recorded resolution — anti-hallucination guarded so it never claims an action it didn't take.",
+      "requiredObjects": ["Case"],
+      "requiredFeatureLicenses": ["Service User"],
+      "optionalObjects": ["Entitlement", "Asset"],
+      "classes": ["CaseServiceService", "LogCaseAction", "ResolveCaseAction"],
+      "testClasses": ["CaseServiceServiceTest"],
+      "permissionSet": "Case_Service_Agent_Admin",
+      "seed": "scripts/apex/seed_case.apex"
+    }
+  ]
+}
