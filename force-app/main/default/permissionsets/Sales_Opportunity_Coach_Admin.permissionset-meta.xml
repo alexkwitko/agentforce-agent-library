@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Sales Opportunity Coach Admin</label>
+    <description>Access to the Sales Opportunity Coach copilot's Apex actions.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <classAccesses><apexClass>OpportunityCoachService</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>SummarizeOpportunityAction</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>SetOpportunityNextStepAction</apexClass><enabled>true</enabled></classAccesses>
+</PermissionSet>

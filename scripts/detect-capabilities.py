@@ -89,11 +89,12 @@ for aid in eligible:
         meta.append("CustomField:%s" % fld)
     if a.get("permissionSet"):
         meta.append("PermissionSet:%s" % a["permissionSet"])
-    # id | bundle | permissionSet | seed | space-separated metadata
+    # id | mode | bundle | permissionSet | seed-or-schedule | space-separated metadata
     print("|".join([
         aid,
+        a.get("mode", "agent"),
         a.get("bundle", ""),
         a.get("permissionSet", ""),
-        a.get("seed", ""),
+        a.get("schedule", "") if a.get("mode") == "headless" else a.get("seed", ""),
         " ".join(meta),
     ]))

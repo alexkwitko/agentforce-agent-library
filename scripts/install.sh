@@ -41,11 +41,11 @@ if [[ -z "$PLAN" ]]; then
   exit 1
 fi
 
-# 2) Install each eligible agent.
-while IFS='|' read -r id bundle permset seed meta; do
+# 2) Install each eligible agent. (field 5 = seed script for agents, schedule script for headless)
+while IFS='|' read -r id mode bundle permset script meta; do
   [[ -z "$id" ]] && continue
   echo
-  echo ">>> Installing: $id"
+  echo ">>> Installing: $id  (${mode:-agent})"
   echo "    - deploying metadata"
   sf project deploy start $ORG_FLAG --metadata $meta --test-level NoTestRun --wait 30 >/dev/null
 
@@ -54,16 +54,21 @@ while IFS='|' read -r id bundle permset seed meta; do
     sf org assign permset --name "$permset" $ORG_FLAG >/dev/null 2>&1 || echo "      (already assigned)"
   fi
 
-  echo "    - publishing agent $bundle"
-  sf agent publish authoring-bundle --api-name "$bundle" $ORG_FLAG --skip-retrieve >/dev/null
-
-  echo "    - activating agent"
-  sf agent activate --api-name "$bundle" $ORG_FLAG >/dev/null 2>&1 \
-    || echo "      (could not auto-activate — open Setup → Agents → $bundle → Activate)"
-
-  if [[ -n "$seed" && -f "$seed" ]]; then
-    echo "    - seeding demo data"
-    sf apex run $ORG_FLAG -f "$seed" 2>/dev/null | grep -E "Number:|ID:|say:|Talk to" || true
+  if [[ "$mode" == "headless" ]]; then
+    if [[ -n "$script" && -f "$script" ]]; then
+      echo "    - scheduling the autonomous job"
+      sf apex run $ORG_FLAG -f "$script" 2>/dev/null | grep -iE "schedul" || true
+    fi
+  else
+    echo "    - publishing agent $bundle"
+    sf agent publish authoring-bundle --api-name "$bundle" $ORG_FLAG --skip-retrieve >/dev/null
+    echo "    - activating agent"
+    sf agent activate --api-name "$bundle" $ORG_FLAG >/dev/null 2>&1 \
+      || echo "      (could not auto-activate — open Setup → Agents → $bundle → Activate)"
+    if [[ -n "$script" && -f "$script" ]]; then
+      echo "    - seeding demo data"
+      sf apex run $ORG_FLAG -f "$script" 2>/dev/null | grep -E "Number:|ID:|say:|Talk to" || true
+    fi
   fi
   echo "    ✓ $id installed"
 done <<< "$PLAN"

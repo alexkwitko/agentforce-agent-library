@@ -13,13 +13,19 @@ installs only the agents it can actually run.**
 
 ## The agents
 
-| Agent | What it does | Needs (objects) |
-|---|---|---|
-| **Field Service Scheduler** | Turns an Order for a serviceable product into a Work Order + appointment, offers real available time slots, and books the customer's choice. | Field Service (`WorkOrder`, `ServiceAppointment`, `ServiceTerritory`) + `Order` |
-| **Service Appointment Closer** | Marks an appointment Completed, rolls the Work Order to Completed, records completion notes (and a Service Report where available). | Field Service (`ServiceAppointment`, `WorkOrder`) |
-| **Knowledge Concierge** | Answers questions **only** from your published Knowledge articles; deflects to a human when nothing matches. | Lightning Knowledge (a published `*__kav` article type) |
-| **Order / Commerce Concierge** | Looks up an order by number, summarizes status + items, and reorders it on request. | Order Management / Commerce (`Order`, `OrderItem`) |
-| **Case Service Agent** | Opens support cases and resolves/closes them with a recorded resolution. | Service Cloud (`Case`) |
+Three **kinds**: 🟢 customer-facing · 🔵 internal copilot · 🟣 headless/autonomous.
+
+| Agent | Kind | What it does | Needs (objects) |
+|---|---|---|---|
+| **Field Service Scheduler** | 🟢 customer | Turns an Order for a serviceable product into a Work Order + appointment, offers real available time slots, and books the customer's choice. | Field Service (`WorkOrder`, `ServiceAppointment`, `ServiceTerritory`) + `Order` |
+| **Service Appointment Closer** | 🔵 copilot | Marks an appointment Completed, rolls the Work Order to Completed, records completion notes (and a Service Report where available). | Field Service (`ServiceAppointment`, `WorkOrder`) |
+| **Knowledge Concierge** | 🟢 customer | Answers questions **only** from your published Knowledge articles; deflects to a human when nothing matches. | Lightning Knowledge (a published `*__kav` article type) |
+| **Order / Commerce Concierge** | 🟢 customer | Looks up an order by number, summarizes status + items, and reorders it on request. | Order Management / Commerce (`Order`, `OrderItem`) |
+| **Case Service Agent** | 🔵 copilot | Opens support cases and resolves/closes them with a recorded resolution. | Service Cloud (`Case`) |
+| **Sales Opportunity Coach** | 🔵 copilot | Summarizes an opportunity's health, recommends the next-best step, and records it (with a follow-up task) on request. | Sales (`Opportunity`, `Task`) |
+| **Stale-Deal Sweeper** | 🟣 headless | Runs daily with no chat UI — finds open opportunities idle past a threshold, logs follow-up tasks, and sets a next step where blank. | Sales (`Opportunity`, `Task`) |
+
+See [`docs/02-agent-roadmap.md`](docs/02-agent-roadmap.md) for the full ~25-agent roadmap (Sales, Service, Field Service, Commerce, Marketing, Ops) and [`docs/01-capability-inventory.md`](docs/01-capability-inventory.md) for how agents map to org licenses.
 
 The installer **detects** which of these your org supports (by checking the backing objects exist —
 not just the license name) and skips the rest with a clear message.

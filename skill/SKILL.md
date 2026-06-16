@@ -26,6 +26,12 @@ Read `agents.json` (the catalog) for the live list. As of writing:
 | `knowledge-concierge` | Answers only from published Knowledge articles | Lightning Knowledge (`*__kav`) |
 | `order-concierge` | Order status lookup + reorder | Order Management / Commerce |
 | `case-service-agent` | Open + resolve/close cases | Service Cloud (Case) |
+| `sales-opportunity-coach` | (copilot) summarize opp + recommend + set next step | Sales (Opportunity) |
+| `stale-deal-sweeper` | (headless) daily — flag stale opps, log tasks | Sales (Opportunity) |
+
+**Agent kinds:** `customer` (Service Agent), `copilot` (Employee Agent, runs as the logged-in user),
+`headless` (no chat UI — a Schedulable/Flow runs it; catalog `mode: headless`, installed by deploying
+Apex + permset + running its `schedule` script, with no bundle publish/activate).
 
 ## Install (do this)
 

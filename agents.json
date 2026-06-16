@@ -70,6 +70,32 @@
       "testClasses": ["CaseServiceServiceTest"],
       "permissionSet": "Case_Service_Agent_Admin",
       "seed": "scripts/apex/seed_case.apex"
+    },
+    {
+      "id": "sales-opportunity-coach",
+      "label": "Sales Opportunity Coach",
+      "kind": "copilot",
+      "bundle": "Sales_Opportunity_Coach",
+      "summary": "Internal sales copilot: summarizes an opportunity's health, recommends the next-best step, and records it (with a follow-up task) on request.",
+      "requiredObjects": ["Opportunity", "Task"],
+      "requiredFeatureLicenses": ["Sales User"],
+      "classes": ["OpportunityCoachService", "SummarizeOpportunityAction", "SetOpportunityNextStepAction"],
+      "testClasses": ["OpportunityCoachServiceTest"],
+      "permissionSet": "Sales_Opportunity_Coach_Admin",
+      "seed": "scripts/apex/seed_opportunity.apex"
+    },
+    {
+      "id": "stale-deal-sweeper",
+      "label": "Stale-Deal Sweeper",
+      "kind": "headless",
+      "mode": "headless",
+      "summary": "Autonomous: on a daily schedule, finds open opportunities idle past a threshold, logs a follow-up task, and sets a next step if blank. Headless exemplar — no chat UI.",
+      "requiredObjects": ["Opportunity", "Task"],
+      "requiredFeatureLicenses": ["Sales User"],
+      "classes": ["StaleOpportunitySweepService", "SweepStaleOpportunitiesAction", "StaleOpportunitySweepSchedulable"],
+      "testClasses": ["StaleOpportunitySweepServiceTest"],
+      "permissionSet": "Stale_Deal_Sweeper_Admin",
+      "schedule": "scripts/apex/schedule_stale_deal_sweeper.apex"
     }
   ]
 }
