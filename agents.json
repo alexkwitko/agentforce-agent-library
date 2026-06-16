@@ -122,6 +122,18 @@
       "testClasses": ["LeadQualifierServiceTest"],
       "permissionSet": "Lead_Qualifier_Admin",
       "schedule": "scripts/apex/schedule_lead_qualifier.apex"
+    },
+    {
+      "id": "campaign-builder",
+      "label": "Campaign Builder",
+      "kind": "copilot",
+      "bundle": "Campaign_Builder",
+      "summary": "Internal marketing copilot: creates a campaign and adds recent leads or contacts as members (a license-free stand-in for Data Cloud segmentation).",
+      "requiredObjects": ["Campaign", "CampaignMember"],
+      "requiredFeatureLicenses": ["Sales User"],
+      "classes": ["CampaignBuilderService", "CreateCampaignAction", "AddCampaignMembersAction"],
+      "testClasses": ["CampaignBuilderServiceTest"],
+      "permissionSet": "Campaign_Builder_Admin"
     }
   ]
 }
