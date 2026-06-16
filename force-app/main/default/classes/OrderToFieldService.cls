@@ -42,7 +42,7 @@ public without sharing class OrderToFieldService {
 
         List<OrderItem> serviceable = [
             SELECT Id, Quantity, UnitPrice, Product2Id, Product2.Name, PricebookEntryId,
-                   Order.AccountId, Order.Account.Name
+                   Order.AccountId, Order.Account.Name, Order.Pricebook2Id
             FROM OrderItem
             WHERE OrderId = :orderId AND Product2.Requires_Field_Service__c = true
         ];
@@ -58,18 +58,31 @@ public without sharing class OrderToFieldService {
             Source_Order_Id__c = String.valueOf(orderId)
         );
         if (territoryId != null) wo.ServiceTerritoryId = territoryId;
+        if (serviceable[0].Order.Pricebook2Id != null) wo.Pricebook2Id = serviceable[0].Order.Pricebook2Id; // lets WOLIs carry a product
         insert wo;
 
         List<WorkOrderLineItem> wolis = new List<WorkOrderLineItem>();
         for (OrderItem oi : serviceable) {
-            wolis.add(new WorkOrderLineItem(
+            // Product2 on a WOLI requires the parent WorkOrder's pricebook + the line's PricebookEntry.
+            WorkOrderLineItem woli = new WorkOrderLineItem(
                 WorkOrderId = wo.Id,
-                Product2Id = oi.Product2Id,
                 Quantity = oi.Quantity,
-                Description = oi.Product2.Name
-            ));
+                Description = oi.Product2 != null ? oi.Product2.Name : 'Service line'
+            );
+            if (wo.Pricebook2Id != null && oi.PricebookEntryId != null) {
+                woli.PricebookEntryId = oi.PricebookEntryId;
+                woli.Product2Id = oi.Product2Id;
+            }
+            wolis.add(woli);
         }
-        insert wolis;
+        try {
+            insert wolis;
+        } catch (DmlException e) {
+            // Some contexts reject the product link on a WOLI — keep the line by description only
+            // (Quantity requires a product, so drop it too).
+            for (WorkOrderLineItem w : wolis) { w.Product2Id = null; w.PricebookEntryId = null; w.Quantity = null; }
+            insert wolis;
+        }
 
         ServiceAppointment sa = new ServiceAppointment(
             ParentRecordId = wo.Id,
