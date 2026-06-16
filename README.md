@@ -49,7 +49,7 @@ not just the license name) and skips the rest with a clear message.
 sf org login web --alias myorg
 
 # 2. install everything your org's licenses allow
-git clone https://github.com/OWNER/agentforce-agent-library
+git clone https://github.com/alexkwitko/agentforce-agent-library
 cd agentforce-agent-library
 ./scripts/install.sh myorg
 ```
@@ -74,6 +74,31 @@ If you have a Dev Hub entitled to these features:
 Agent Script bundles (the agents themselves) are published with `sf agent publish`, which a metadata
 button can't do. The Apex/fields/permission sets *could* deploy via a button, but the agents still
 need the CLI step — so we ship one honest `install.sh` that does the whole thing.
+
+---
+
+## Cloud setup skills (agents are useless without the clouds)
+
+An agent can only act on a cloud that exists. The [`skills/`](skills/) folder ships four **DX-first
+playbooks** — distilled from real builds — for standing up those clouds, including the gotchas that
+actually cost time (the CMS product-image multipart upload, the guest-checkout Setup automation,
+`FieldServiceSettings` field names, Omni-Channel chat routing, the redacted-token workaround, etc.).
+
+| Skill | Sets up |
+|---|---|
+| [`salesforce-agentforce`](skills/salesforce-agentforce) | Agentforce + Data Cloud + Messaging-for-Web |
+| [`salesforce-d2c-setup`](skills/salesforce-d2c-setup) | D2C / B2B Commerce store (catalog, images, payment/shipping/tax, guest checkout) |
+| [`salesforce-field-service`](skills/salesforce-field-service) | Field Service (WorkOrders, scheduling, Order→work) |
+| [`salesforce-service`](skills/salesforce-service) | Service Cloud (Cases, Knowledge, Omni-Channel routing) |
+
+These are [Claude Code **Agent Skills**](https://docs.claude.com/en/docs/claude-code/skills). Install
+them and Claude Code applies the right playbook automatically while you build:
+
+```bash
+cp -R skills/salesforce-* ~/.claude/skills/      # then ask Claude to "set up a D2C store", etc.
+```
+
+Full instructions + how they fit together: [`skills/README.md`](skills/README.md).
 
 ---
 
