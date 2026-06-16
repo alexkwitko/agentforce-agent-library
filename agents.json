@@ -109,6 +109,19 @@
       "testClasses": ["AccountInsightsServiceTest"],
       "permissionSet": "Account_360_Copilot_Admin",
       "seed": "scripts/apex/seed_account.apex"
+    },
+    {
+      "id": "lead-qualifier",
+      "label": "Lead Qualifier",
+      "kind": "headless",
+      "mode": "headless",
+      "summary": "Autonomous: on a daily schedule, scores open leads on profile completeness, stamps Rating (Hot/Warm/Cold), and logs follow-up tasks for hot leads. Headless — no chat UI.",
+      "requiredObjects": ["Lead", "Task"],
+      "requiredFeatureLicenses": ["Sales User"],
+      "classes": ["LeadQualifierService", "QualifyLeadsAction", "LeadQualifierSchedulable"],
+      "testClasses": ["LeadQualifierServiceTest"],
+      "permissionSet": "Lead_Qualifier_Admin",
+      "schedule": "scripts/apex/schedule_lead_qualifier.apex"
     }
   ]
 }

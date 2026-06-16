@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Lead Qualifier Admin</label>
+    <description>Access to the headless Lead Qualifier Apex (service, invocable action, schedulable).</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <classAccesses><apexClass>LeadQualifierService</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>QualifyLeadsAction</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>LeadQualifierSchedulable</apexClass><enabled>true</enabled></classAccesses>
+</PermissionSet>
