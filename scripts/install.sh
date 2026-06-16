@@ -42,7 +42,7 @@ if [[ -z "$PLAN" ]]; then
 fi
 
 # 2) Install each eligible agent. (field 5 = seed script for agents, schedule script for headless)
-while IFS='|' read -r id mode bundle permset script meta; do
+while IFS='|' read -r id mode bundle permset script meta <&3; do
   [[ -z "$id" ]] && continue
   echo
   echo ">>> Installing: $id  (${mode:-agent})"
@@ -71,7 +71,7 @@ while IFS='|' read -r id mode bundle permset script meta; do
     fi
   fi
   echo "    ✓ $id installed"
-done <<< "$PLAN"
+done 3<<< "$PLAN"
 
 echo
 echo "============================================================"
