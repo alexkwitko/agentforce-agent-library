@@ -23,6 +23,14 @@ The Scheduling Console tab appears only once **ES&O is enabled**, and ES&O only 
 5. The **"Turn on Enhanced Scheduling and Optimization → Enable"** button activates once all groups are green. Click **Enable** → wait for "Enabling…" → green **Enabled**.
 6. The **Scheduling Console** tab now appears (App Launcher → "Scheduling Console", or `…/lightning/page/dispatchConsole`). Give dispatchers the **FSL Dispatcher** perm sets (§4) — same as Classic.
 
+### Make territories show in the Scheduling Console (and why some don't)
+- **Add territories to the view:** console **gear (⚙ top-right) → Service Territories → Select All → Save** (persists per user). This controls which territories are *in scope*.
+- **⚠️ But the resource Gantt only draws a territory BAND when that territory has at least one resource whose _primary_ `ServiceTerritoryMember` is that territory AND whose user has the `PermissionsFieldServiceScheduling` permission** (see the ⚠️ section below). Consequences (verified):
+  - A territory with only **secondary** members → **no band** (secondary membership doesn't render a Gantt row).
+  - A territory with **no members** → **no band**.
+  - A primary member **without** the Scheduling permission → not shown either.
+- So "show all territories" requires **one primary, scheduling-licensed resource per territory**. Since a resource has exactly **one** primary territory and **Field Service Scheduling is a counted PSL** (e.g., 2 in a Dev org), you can only render as many territories as you have licensed resources to seat as primaries. Appointments from *all* in-scope territories still appear in the **"All Service Appointments" list** regardless.
+
 **Verify it truly provisioned (not just flag-flipped):**
 - Apex: `FSL.ScheduleService.schedule(policyId, saId)` on an unscheduled SA returns success and the **engine auto-picks slot+resource**. If it throws **`Schedule optimization incomplete`**, the service is NOT provisioned → re-run the Enable wizard.
 - Console shows a **"% Booked"** figure per resource and **no red "We couldn't load the availability" banner**.
