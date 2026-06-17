@@ -2,20 +2,55 @@
 
 The Dispatcher Console and the FSL permission sets come from the **managed package**. The managed-package permission sets are named **`FSL_*`** (e.g. `FSL_Dispatcher_Permissions`, `FSL_Dispatcher_License`) — query the org, don't assume the namespace prefix is populated.
 
-## 0. Two consoles: Classic vs the new Scheduling Console (verified Summer '26)
-- **Classic Dispatch Console** — the long-standing Aura/VF **Gantt + Map** (tab `FSL__FieldService`, label "Classic Dispatch Console", inside the **Field Service** app). Works on the classic optimization engine.
-- **Scheduling Console** — the **new LWC-based** console (lighter, multi-screen; has **Optimize**, a policy selector, **Create**, a resource Gantt + an "All Service Appointments" list). **Requires Enhanced Scheduling & Optimization (ES&O) enabled.** Enable ES&O via `o2EngineEnabled=true` in `FieldServiceSettings` — **DX works**: deploy as **mdapi** (`--metadata-dir` with the file named **`FieldService.settings`**, NOT `.settings-meta.xml`, + a `package.xml` with `<name>Settings</name>`). Once ES&O is on, the **Scheduling Console** tab appears automatically (App Launcher → "Scheduling Console"; URL `lightning/page/dispatchConsole`). Same Dispatcher permission sets as Classic. (`o2EngineEnabled` is a largely one-way engine migration — confirm with the user before flipping it.)
-- **⚠️ "We couldn't load the availability" / "couldn't check rule violations" in the new Scheduling Console — checklist (in priority order):**
-  1. **Operating Hours need `TimeSlot` rows.** Territories whose OH has 0 time slots = no availability to compute. Add Mon–Fri windows (`TimeSlot`: `OperatingHoursId`, `DayOfWeek`, `StartTime`, `EndTime`, `Type='Normal'`). **This is the #1 cause.**
-  2. Territories geocoded (Lat/Long) + resource has a `LastKnownLatitude/Longitude` home base.
-  3. Resource is active (`ResourceType='T'`), has a **PRIMARY** `ServiceTerritoryMember`, skills, and the default policy has a **Resource Availability** work rule.
-  - **✅ THE ACTUAL FIX (verified end-to-end): enabling ES&O via the Metadata API is NOT enough — you MUST run the Setup-UI enablement wizard, which provisions the optimization service.** Field Service Settings → **Optimization → Activation** → if ES&O reads "Enabled" but `schedule()` throws "Schedule optimization incomplete", click **Turn Off**, then **Run Readiness Check**, tick the acknowledgment checkboxes in all 3 result sections (Update Your Configuration / Review Partially Supported Features / Consider Differences In Behavior — each section's circle turns green), then click **Enable**. After this, `FSL.ScheduleService.schedule(policyId, saId)` auto-schedules (engine-computed slot+resource). **Don't chase the "Standard Optimization / optimization-user / connected-app / Activate Optimization" path — that's the LEGACY ClickSoftware optimizer and is a red herring for ES&O (in-platform).** Run unschedule and schedule in SEPARATE transactions or you get a transient "time slot/resource no longer available, try again."
-  - **(historical) If it STILL errors after all the above** (data fully correct + Classic console works on the same data): the ES&O **backend service was never provisioned**, even though the org prefs read ON. **Root cause (verified): enabling ES&O via the Metadata API does NOT provision the service.** `sf project deploy` of `<o2EngineEnabled>true</o2EngineEnabled>` (+`optimizationServiceAccess`) writes the *stored preference* (so the flag reads true and the **Scheduling Console** tab appears) but **skips the side-effecting provisioning handshake** that the Setup-UI button runs — registering the org with the Salesforce-hosted **O2/OIS optimization service** and seeding `FSL__O2_Settings__mdt`. Diagnose the "flag-on-but-not-provisioned" state by querying: `FSL__O2_Settings__mdt` = **0 records** and `FSL__Optimization_Request__c` = **0 ever** (engine has never run), while `RemoteSiteSetting` shows `FSL_O2_Optimize`/`FSL_OIS_FieldService_MULTI` **active** and `FieldServiceSettings` shows `o2EngineEnabled`+`optimizationServiceAccess`=true. (`FSL__O2_Toggle_Settings__mdt` isn't SOQL-queryable — "not supported".)
-    - **The fix is genuinely UI-only** (no CLI/metadata path triggers provisioning): **Field Service Settings → Optimization → Activation**. Two things there: "Turn on Enhanced Scheduling and Optimization" (the ES&O engine toggle) AND **"Standard Optimization" → Create Optimization Profile**. The latter creates a `Field Service Optimization` profile + background user (the user the optimizer runs as) — **but it may be created INACTIVE** (activate it: `update User set IsActive=true`). After that the section says **"log in as the Field Service Optimization user"** to authorize: enable the **"Administrators Can Log in as Any User"** Login Access Policy (⚠️ a security setting — get user consent), **Login As** that user, and click **Activate Optimization**.
-    - ⚠️ **Activate Optimization can hit a hard wall:** it opens `RemoteAccessAuthorizationPage` (OAuth consent for the FSL optimization **connected app**) → **"Insufficient Privileges."** KB 002134246 says fix via Setup → Connected Apps OAuth Usage → Install/Unblock the FSL Optimization connected app. **But verify the connected app even EXISTS first:** `sf data query --use-tooling-api -q "SELECT Name FROM ConnectedApplication WHERE Name LIKE '%ptimiz%'"`. In a Dev Edition org it may return **0** — the optimization connected app simply isn't provisioned, so there's nothing to install/unblock and the legacy optimizer **cannot be activated without Salesforce support**. (ES&O is "in-platform" yet `schedule()` still routed through this legacy optimization auth and stayed broken.)
-    - ⚠️ **Don't `/secur/logout.jsp` out of a Login-As session — it's a FULL logout, not return-to-admin.** Recover credential-free with `sf org open --path "<setup path>"` (it sets the cookie; then a normal Lightning URL loads authenticated). Pasting a `frontdoor.jsp?otp=` URL into the browser is blocked by the auto-mode classifier.
-    - The **`sfdc_fieldservice` ("Field Service Integration") perm set canNOT be assigned to a regular admin** ("license doesn't match") — not the fix.
-    - **Until ES&O is provisioned, use the Classic Dispatch Console + manual dispatch** (classic engine; works on the same data).
+## 0. The two Dispatcher Consoles — and how to turn on the NEW one (Scheduling Console) WITHOUT breaking it
+*(verified end-to-end on a Dev org, 2026-06)*
+
+Field Service ships **two** dispatch consoles, both inside the **Field Service** Lightning app; the same FSL Dispatcher permission sets gate both (§4).
+
+| | **Classic Dispatch Console** | **Scheduling Console (NEW, LWC)** |
+|---|---|---|
+| Tab / URL | tab `FSL__FieldService` (label "Classic Dispatch Console") | `lightning/page/dispatchConsole` (label "Scheduling Console") |
+| UI | Aura/VF **Gantt + Map** | Lighter LWC: resource Gantt + "All Service Appointments" list + **Optimize** / policy selector / **Create** |
+| Engine | classic optimizer | **Enhanced Scheduling & Optimization (ES&O)** — in-platform |
+| Works out of the box? | **Yes** | **Only after ES&O is enabled via the UI wizard** (below) |
+
+### ✅ Enable the new Scheduling Console + make it visible — the RIGHT way
+The Scheduling Console tab appears only once **ES&O is enabled**, and ES&O only actually *works* if you enable it through the **Setup-UI wizard** (which provisions the in-platform optimization service). Exact path:
+1. App Launcher → **Field Service Admin** app → **Field Service Settings** tab (URL `lightning/n/FSL__Field_Service_Settings`).
+2. Left nav → **Optimization** → **ACTIVATION** sub-tab.
+3. Under **"Enhanced Scheduling and Optimization"** click **Run Readiness Check**.
+4. The check returns advisory items in up to 3 groups (*Update Your Configuration* / *Review Partially Supported Features* / *Consider Differences In Behavior*). **Tick the acknowledgment checkbox on every item** — each group's circle turns green. (They're "I've read this," not config edits.)
+5. The **"Turn on Enhanced Scheduling and Optimization → Enable"** button activates once all groups are green. Click **Enable** → wait for "Enabling…" → green **Enabled**.
+6. The **Scheduling Console** tab now appears (App Launcher → "Scheduling Console", or `…/lightning/page/dispatchConsole`). Give dispatchers the **FSL Dispatcher** perm sets (§4) — same as Classic.
+
+**Verify it truly provisioned (not just flag-flipped):**
+- Apex: `FSL.ScheduleService.schedule(policyId, saId)` on an unscheduled SA returns success and the **engine auto-picks slot+resource**. If it throws **`Schedule optimization incomplete`**, the service is NOT provisioned → re-run the Enable wizard.
+- Console shows a **"% Booked"** figure per resource and **no red "We couldn't load the availability" banner**.
+
+### ❌ What NOT to do (this is exactly what breaks it)
+- **Do NOT enable ES&O by metadata alone.** Deploying `<o2EngineEnabled>true</o2EngineEnabled>` (+`optimizationServiceAccess`) in `FieldServiceSettings` flips the stored flag and makes the tab appear — **but skips the provisioning handshake**. You end up with the tab visible yet `schedule()` throwing "Schedule optimization incomplete" and the console showing "We couldn't load the availability." Metadata is fine to *read/verify* the flag; **the real enable must be the UI wizard.**
+- **Do NOT chase the "Standard Optimization" section** ("Create Optimization Profile" → "log in as the Field Service Optimization user" → "Activate Optimization" → connected-app OAuth). That is the **LEGACY ClickSoftware optimizer** and a **dead-end red herring for ES&O** (which is in-platform). It leads to a `RemoteAccessAuthorizationPage` that throws **"Insufficient Privileges"**, and in a Dev org references a connected app that doesn't even exist (`SELECT Name FROM ConnectedApplication WHERE Name LIKE '%ptimiz%'` → 0). Ignore that whole section for ES&O.
+- **Do NOT run unschedule + schedule in the SAME Apex transaction** — transient "time slot/resource no longer available, try again." Use two separate executions.
+- **Do NOT exit a Login-As session via `/secur/logout.jsp`** — that's a FULL logout (kills your admin session too). Return via the banner's own "Log out", or recover credential-free with `sf org open --path "<path>"` (don't paste a `frontdoor.jsp?otp=` URL — the auto-mode classifier blocks it).
+- `o2EngineEnabled` is a **largely one-way engine migration** — confirm with the user before first enabling. (The UI *does* offer "Turn Off", used in the repair below.)
+- The **`sfdc_fieldservice` ("Field Service Integration") perm set is NOT assignable to a regular admin** ("license doesn't match") — it's not the fix for anything here.
+
+### 🛠️ If the Scheduling Console is broken — how to fix it
+**Symptoms:** tab visible but **"We couldn't load the availability"** banner, and/or Apex `schedule()`/`scheduleExtended()` throws **`Schedule optimization incomplete`**. **Diagnose** the "flag-on-but-not-provisioned" state: `FSL__Optimization_Request__c` count = **0** (engine never ran) while `FieldServiceSettings.o2EngineEnabled` = true and `RemoteSiteSetting` `FSL_O2_Optimize`/`FSL_OIS_FieldService_MULTI` are active. (Caused almost always by enabling ES&O via metadata.)
+
+**Fix (UI, ~1 min) — re-run the wizard:** Field Service Settings → Optimization → **ACTIVATION** →
+1. **Turn Off** Enhanced Scheduling and Optimization (clears the half-provisioned state).
+2. **Run Readiness Check** → tick all acknowledgment boxes (all groups green).
+3. **Enable** → wait for green **Enabled**.
+4. Re-test: unschedule an SA, then in a **separate** transaction `FSL.ScheduleService.schedule(policyId, saId)` → auto-schedules; the console availability loads (resource shows "% Booked").
+
+**Also rule out the DATA causes of "couldn't load availability"** (these break availability even when ES&O IS provisioned), in priority order:
+1. **OperatingHours has 0 `TimeSlot` rows** — the #1 cause. Add Mon–Fri windows (`TimeSlot`: `OperatingHoursId`, `DayOfWeek`, `StartTime`, `EndTime`, `Type='Normal'`).
+2. Territories geocoded (Lat/Long) + resource `LastKnownLatitude/Longitude` home base.
+3. Resource active (`ResourceType='T'`) with a **PRIMARY** `ServiceTerritoryMember` + skills; default policy has a **Service Resource Availability** work rule.
+
+**Worst case, you're never blocked:** the **Classic Dispatch Console + manual dispatch** (set `SchedStartTime`/`SchedEndTime` + `Status='Scheduled'` + insert `AssignedResource`) works on the same data regardless of ES&O state.
+
 - **"You must have Dispatcher license in order to load the Dispatcher console"** — the #1 console error. The console checks the **`FSL_Dispatcher_Permissions` + `FSL_Dispatcher_License` PERM SETS**, NOT just the **Field Service Dispatcher PSL**. Having the PSL alone is NOT enough — you must also assign those two FSL perm sets (PSL is the prerequisite for the perm-set assignment). Assigning them clears the error and the Gantt loads.
 
 ## The map shows nothing until territories are "designed" (geocoded)
