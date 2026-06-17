@@ -57,7 +57,24 @@ The Scheduling Console tab appears only once **ES&O is enabled**, and ES&O only 
 The dispatcher **Map** plots ServiceTerritories by their **Latitude/Longitude** and resources by `LastKnownLatitude/Longitude`. Fresh territories have **no address/geo** → empty map. Fix (API-doable):
 - Set `ServiceTerritory` `Street/City/PostalCode` + **`StateCode`/`CountryCode`** (use the Code fields — the org likely has State/Country picklists; setting `State`/`Country` text throws `FIELD_INTEGRITY_EXCEPTION`). **`Latitude`/`Longitude` ARE directly writable** on ServiceTerritory — set them so the territory pins without waiting on geocoding rules.
 - Set the resource's `LastKnownLatitude/Longitude` (+ `LastKnownLocationDate`) for a home-base pin.
-- **Territory boundary polygons** (`FSL__Polygon__c`, 0 by default) are drawn in the **Map → Polygons** UI (a visual draw activity); that's the optional "designed boundary" layer beyond geocoded pins.
+### Territory boundary polygons (`FSL__Polygon__c`) — KML import or draw, NOT Apex
+Polygons are the "designed boundary" layer beyond geocoded pins; they drive both the **visual map boundaries** and the **geofence → territory assignment** (`FSL.PolygonUtils` resolves a lat/long to its containing territory — verify the exact method signature against your org's `FSL` namespace).
+
+- **⚠️ You CANNOT create `FSL__Polygon__c` via Apex/API DML.** A managed **validation rule** rejects every externally-supplied value — `FIELD_CUSTOM_VALIDATION_EXCEPTION: Polygon KML data structure is invalid: []` — for raw `<Polygon>` KML, full `<kml>` docs, GeoJSON, JSON coordinate arrays, AND null/empty `FSL__KML__c` (all verified). The valid internal `FSL__KML__c` structure is generated only by the FSL map tooling, so DML/`sf data create` is a dead end. (The fields exist — `FSL__KML__c`, `FSL__Color__c` (#hex), bounding box `FSL__Mi_La__c`/`FSL__Ma_La__c`/`FSL__Mi_Lo__c`/`FSL__Ma_Lo__c`, `FSL__Service_Territory__c` — but you can't insert them directly.)
+- **✅ Supported creation paths — both in the Classic Dispatch Console → Map** (enable polygons first; the polygon tools live on the **Map**, not in Field Service Admin):
+  1. **Draw**: Map → polygon/draw tool → click out the boundary on the map → assign it to a Service Territory. Good for one-off shapes.
+  2. **Import Polygons in KML** (bulk / "bigger polygons"): Map → **Import KML** → upload a standard **OGC KML** file. The importer generates the valid `FSL__Polygon__c` records (this is why it works where Apex doesn't). Each `<Placemark>` becomes one polygon and is matched to a Service Territory (by the Placemark `<name>` / selection during import). This is the right path to create large or many boundaries at once.
+- **KML file shape** (standard OGC KML; coordinates are **`lon,lat[,alt]`**, space-separated, ring should close first=last):
+  ```xml
+  <?xml version="1.0" encoding="UTF-8"?>
+  <kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+    <Placemark><name>Kwitko Metro</name><Polygon><outerBoundaryIs><LinearRing><coordinates>
+      -122.55,37.83,0 -122.35,37.83,0 -122.35,37.45,0 -122.55,37.45,0 -122.55,37.83,0
+    </coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+  </Document></kml>
+  ```
+  (KML import has a file-size / polygon-count limit — confirm the current value for your release. Source: Salesforce Help "Import Service Territory Polygons in KML" `service.pfs_import_kml.htm`, "Create and Manage Map Polygons" `service.pfs_map_polygons.htm`, "Enable Map Polygons" `service.pfs_map_polygons_enable.htm`.)
+- **Net:** to make/replace big territory polygons, build a KML file with the boundary coordinates and **Import Polygons in KML** in the Map — do NOT attempt `FSL__Polygon__c` DML.
 
 ## 1. The Dispatcher Console
 A managed-package feature surfaced as the **Field Service** tab inside the **Field Service** Lightning app (NOT "Field Service Admin", which is the config app). The dispatcher's single screen to schedule/optimize/dispatch.

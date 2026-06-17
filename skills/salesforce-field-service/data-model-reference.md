@@ -52,7 +52,7 @@ Standard Field Service objects (available once the feature is enabled) + the **F
 | `FSL__Scheduling_Policy_Goal__c` | Junction policy ↔ goals, **carries `Weight`**. |
 | `FSL__Optimization_Request__c` | A queued/global optimization run (status/scope/horizon). |
 | `FSL__Time_Dependency__c` | Scheduling dependency between appointments (same day / immediately after / same resource). |
-| `FSL__Polygon__c` | Map polygon for geofence → territory assignment. |
+| `FSL__Polygon__c` | Map polygon for geofence → territory assignment (`FSL.PolygonUtils` lat/long→territory). **Create via Map draw or KML import only — Apex/API DML is blocked by a managed validation rule.** |
 | `FSL__Logged_Dependency__c` | Diagnostics log of time-dependency evaluation. |
 
 Wiring:
