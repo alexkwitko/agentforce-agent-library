@@ -89,6 +89,12 @@ A managed-package feature surfaced as the **Field Service** tab inside the **Fie
 
 **Territory filtering:** a dispatcher loads territories into the Gantt (gear icon → Territory filtering); the list/resources/map scope to them. Dispatchers are tied to territories via `ServiceTerritoryMember` with **Member Role = Dispatcher**. Columns customizable via **field sets** (`service.pfs_fieldsets.htm`). Help: `sf.pfs_gantt.htm`, `service.pfs_appointments_list.htm`, `service.pfs_territory.htm`, `pfs_customize_dc.htm`.
 
+## ⚠️ #1 reason a resource is NEVER auto-assigned (and not shown in the Scheduling Console resource list)
+**To be a scheduling candidate, the resource's USER needs the `Field Service Scheduling` USER PERMISSION (`PermissionsFieldServiceScheduling`) — the Field Service Scheduling PSL (license) ALONE IS NOT ENOUGH.** The license is just the prerequisite to *assign* the permission.
+- **Symptom (verified):** `FSL.ScheduleService.schedule()` returns success but the SA stays `None`/unassigned; the resource never wins any appointment even when it's the *only* one with the required skill; the new **Scheduling Console shows fewer resources than the territory has members**; and the UI error is **"Only users with the Field Service Scheduling user permission can be included in scheduling optimization."** All other config (active `ServiceResource` type T, primary `ServiceTerritoryMember`, skills, geo, even the Scheduling PSL) can look perfect and it still won't schedule.
+- **Why a System-Admin resource "just works":** the Admin profile already grants the permission, so the seed/first technician (often an admin) is a candidate and masks the requirement for everyone else.
+- **Fix:** assign the user a permission set that has `PermissionsFieldServiceScheduling=true`. The packaged one is **`FSL_Resource_License`** (its `License` = *Field Service Scheduling*, so the user must already hold that PSL). `sf data query -o ORG -q "SELECT Name FROM PermissionSet WHERE PermissionsFieldServiceScheduling=true"` to find it. Note: **`FSL_Resource_Permissions` does NOT carry this permission** — `FSL_Resource_License` does. Assign via `PermissionSetAssignment` (PSL/license first). Re-test: a skill-unique SA now schedules to that resource.
+
 ## 2. Permission Set Licenses (PSLs)
 Org-level entitlements enabled per user (Setup → Users → user → PSL Assignments).
 | PSL | For | Who |
@@ -128,7 +134,7 @@ CLI: `sf data create record --sobject PermissionSetLicenseAssign --values "Assig
 
 ## 6. End-to-end
 **Dispatcher:** (1) user record: Service Cloud User + correct time zone (Gantt is TZ-sensitive); (2) PSLs: Field Service Standard + Field Service Dispatcher; (3) perm set: FSL Dispatcher Permissions (rolls up Agent + Resource); (4) `ServiceTerritoryMember` role Dispatcher on each managed territory; (5) open Field Service app → Field Service tab → load territories.
-**Technician/resource:** (1) user: Service Cloud User + time zone; (2) PSLs: Field Service Standard + Field Service Scheduling + Field Service Mobile; (3) perm sets: FSL Resource Permissions + `FieldServiceMobileStandardPermSet`; (4) `ServiceResource` (`ResourceType='T'`, `IsActive=true`) linked to the user; (5) `ServiceTerritoryMember` **Primary** (+ secondary/relocation); (6) `ServiceResourceSkill` records.
+**Technician/resource:** (1) user: Service Cloud User + time zone; (2) PSLs: Field Service Standard + Field Service Scheduling + Field Service Mobile; (3) perm sets: **`FSL_Resource_License`** (grants `PermissionsFieldServiceScheduling` — REQUIRED to be a scheduling candidate, see the ⚠️ section above) + FSL Resource Permissions + `FieldServiceMobileStandardPermSet`; (4) `ServiceResource` (`ResourceType='T'`, `IsActive=true`) linked to the user; (5) `ServiceTerritoryMember` **Primary** (+ secondary/relocation); (6) `ServiceResourceSkill` records. **Without step (3)'s `FSL_Resource_License`, the optimizer silently ignores the resource even though everything else is correct.**
 
 ## 7. UI-only vs API-doable
 | Task | UI-only? | API? |
